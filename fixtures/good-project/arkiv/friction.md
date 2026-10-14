@@ -1,0 +1,3 @@
+# Friction
+
+Nothing notable yet.
