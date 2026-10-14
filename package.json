@@ -1,0 +1,27 @@
+{
+  "name": "usalama",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Usalama — the Arkiv security & trust auditor. Verifies a project's claimed Arkiv usage against its actual on-chain entities and publishes a tamper-proof, creator-signed verdict.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace packages/core && npm run build --workspace packages/cli && npm run build --workspace apps/web",
+    "typecheck": "npm run typecheck --workspace packages/core && npm run typecheck --workspace packages/cli",
+    "test": "node --experimental-strip-types scripts/smoke-test.ts",
+    "seed-rules": "node --experimental-strip-types scripts/seed-rule-definitions.ts",
+    "audit": "node --experimental-strip-types packages/cli/src/index.ts",
+    "dev:web": "npm run dev --workspace apps/web",
+    "build:web": "npm run build --workspace apps/web"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22.10.0"
+  }
+}
