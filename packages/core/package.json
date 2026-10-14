@@ -1,0 +1,31 @@
+{
+  "name": "@usalama/core",
+  "version": "0.1.0",
+  "description": "Rule engine + Arkiv client for Usalama, the Arkiv security & trust auditor",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./client": "./dist/client.js",
+    "./entities": "./dist/entities.js",
+    "./engine": "./dist/engine.js",
+    "./types": "./dist/types.js",
+    "./liveProbe": "./dist/liveProbe.js",
+    "./scan": "./dist/scan.js",
+    "./rules": "./dist/rules/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@arkiv-network/sdk": "0.8.1",
+    "viem": "^2.57.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.7.0"
+  }
+}
