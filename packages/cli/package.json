@@ -1,0 +1,23 @@
+{
+  "name": "@usalama/cli",
+  "version": "0.1.0",
+  "description": "usalama — audit an Arkiv project's security, privacy, and data-design posture from the command line",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "usalama": "./bin/usalama.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@usalama/core": "0.1.0",
+    "@arkiv-network/sdk": "0.8.1",
+    "commander": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
