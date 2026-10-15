@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Usalama — The Arkiv Security &amp; Trust Auditor</title>
+    <meta name="description" content="Usalama verifies a project's claimed Arkiv usage against its actual on-chain entities, and publishes a tamper-proof, creator-signed verdict on Tiramisu." />
+    <link rel="icon" href="data:,">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div class="noise-overlay" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <div class="wrap header-row">
+        <a class="wordmark" href="/" aria-label="Usalama home">[ <span class="wordmark-accent">USALAMA</span> ]</a>
+        <nav class="header-nav">
+          <a href="https://github.com/Arkiv-Network" target="_blank" rel="noreferrer">Arkiv</a>
+          <a href="https://tiramisu.explorer.arkiv.network" target="_blank" rel="noreferrer">Explorer</a>
+          <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">
+            <span class="theme-toggle-icon">◐</span>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="hero">
+        <p class="eyebrow">Built for the Arkiv Global Tour Stop · Security pillar</p>
+        <h1>A leaderboard is only as honest<br class="br-desktop" /> as whoever can't edit it.</h1>
+        <p class="hero-sub">
+          Usalama checks whether a project's <em>claimed</em> Arkiv usage matches its
+          <em>actual</em> on-chain entities — then publishes the verdict as an entity itself,
+          signed by the auditor's own wallet. Not even Usalama can quietly fix a bad score later.
+        </p>
+
+        <div class="code-panel" aria-label="Example usage">
+          <div class="code-panel-head">
+            <span class="dot dot-red"></span><span class="dot dot-amber"></span><span class="dot dot-green"></span>
+            <span class="code-panel-title">terminal</span>
+          </div>
+          <pre><code><span class="tok-muted"># audit a project, check it against Tiramisu, publish the verdict</span>
+<span class="tok-cmd">usalama</span> audit ./my-project --repo github.com/me/my-project --publish
+
+<span class="tok-muted"># every report is a real, signed Arkiv entity — verify it yourself</span>
+<span class="tok-cmd">usalama</span> list github.com/me/my-project</code></pre>
+        </div>
+      </section>
+
+      <section class="lookup-section">
+        <h2 class="section-title">Look up a project</h2>
+        <form id="search-form" class="lookup-form">
+          <input type="text" id="repo-input" placeholder="github.com/you/project" autocomplete="off" />
+          <button type="submit" class="btn btn-primary">Look up</button>
+        </form>
+        <div id="results" class="results"></div>
+
+        <div class="info-card">
+          <strong>Nothing here yet?</strong>
+          <p>
+            This dashboard only <em>reads</em> what's already published on Tiramisu — it can't run
+            new source-code analysis from a browser tab. Generate a real report with the CLI:
+          </p>
+          <code class="inline-code">npx @usalama/cli audit ./path/to/project --publish</code>
+          <p class="info-card-foot">Full setup, including funding a testnet wallet, is in the repo's README.</p>
+        </div>
+      </section>
+
+      <section class="feed-section">
+        <h2 class="section-title">Recently published</h2>
+        <p class="section-sub">Streamed live over WebSocket, straight from Tiramisu. No polling, no backend.</p>
+        <div id="live-feed" class="live-feed">
+          <p class="status">Connecting to Tiramisu…</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-row">
+        <p>
+          Usalama is open source (MIT). Every report shown here is a real Arkiv entity on
+          Tiramisu — verify any of them at
+          <a href="https://tiramisu.explorer.arkiv.network" target="_blank" rel="noreferrer">tiramisu.explorer.arkiv.network</a>.
+        </p>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
