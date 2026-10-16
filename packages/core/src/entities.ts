@@ -24,8 +24,13 @@ export const AUDIT_REQUEST_LIFETIME = ExpirationTime.fromHours(24)
 export const RULE_DEFINITION_LIFETIME = ExpirationTime.fromYears(2)
 
 /**
- * Publishes one audit report as an Arkiv entity, one per (repoUrl, pillar) pair so each pillar's
+ * Publishes one audit report as an Arkiv entity, one per (repo_url, pillar) pair so each pillar's
  * score can be queried, extended and historied independently.
+ *
+ * Attribute names are all-lowercase snake_case (repo_url, findings_count, audited_at), not
+ * camelCase. The client-side validator (attr/names.ts) allows uppercase letters, but the chain's
+ * actual identifier encoding does not — a real transaction reverted with `Ident32InvalidByte` on
+ * "auditedAt"'s capital A before this fix. See arkiv/friction.md for the full story.
  *
  * Flags: `permissionlessExtension` so the *audited* project's own wallet can keep a passing
  * report fresh by re-requesting an audit, without being able to alter the score itself — see
@@ -44,11 +49,11 @@ export async function publishAuditReport(client: WalletArkivClient, pillar: Pill
     expires: AUDIT_REPORT_LIFETIME,
     attributes: {
       kind: str(ENTITY_KINDS.auditReport),
-      repoUrl: str(report.repoUrl),
+      repo_url: str(report.repoUrl),
       pillar: str(pillar),
       score: i32(score),
-      findingsCount: i32(pillarFindings.length),
-      auditedAt: u64(BigInt(report.auditedAt)),
+      findings_count: i32(pillarFindings.length),
+      audited_at: u64(BigInt(report.auditedAt)),
     },
     payload: jsonToPayload({ findings: pillarFindings }),
     contentType: "application/json",
@@ -67,7 +72,7 @@ export async function requestAudit(client: WalletArkivClient, repoUrl: string) {
     expires: AUDIT_REQUEST_LIFETIME,
     attributes: {
       kind: str(ENTITY_KINDS.auditRequest),
-      repoUrl: str(repoUrl),
+      repo_url: str(repoUrl),
       status: str("queued"),
     },
     payload: jsonToPayload({ repoUrl }),
@@ -75,7 +80,7 @@ export async function requestAudit(client: WalletArkivClient, repoUrl: string) {
   })
   // Note: who requested it is already on-chain without a dedicated attribute — it's the
   // transaction's $creator, set by whichever account signs this call. A redundant
-  // "requestedBy" attribute would just duplicate what $creator already proves.
+  // "requested_by" attribute would just duplicate what $creator already proves.
 }
 
 /**
@@ -94,7 +99,7 @@ export async function publishRuleDefinitions(
       expires: RULE_DEFINITION_LIFETIME,
       attributes: {
         kind: str(ENTITY_KINDS.ruleDefinition),
-        ruleId: str(rule.id),
+        rule_Id: str(rule.id),
         pillar: str(rule.pillar),
       },
       payload: jsonToPayload({ description: rule.description }),
@@ -110,12 +115,12 @@ export async function publishRuleDefinitions(
 export async function getLatestReports(client: PublicArkivClient, repoUrl: string, limit = 10) {
   const page = await client
     .select({ key: true, attributes: true, payload: true })
-    .where(eq("kind", ENTITY_KINDS.auditReport), eq("repoUrl", repoUrl))
+    .where(eq("kind", ENTITY_KINDS.auditReport), eq("repo_url", repoUrl))
     .limit(limit)
     .fetch()
   return [...page.entities].sort((a, b) => {
-    const an = a.attributes?.["auditedAt"]?.value
-    const bn = b.attributes?.["auditedAt"]?.value
+    const an = a.attributes?.["audited_at"]?.value
+    const bn = b.attributes?.["audited_at"]?.value
     const au = typeof an === "bigint" ? an : 0n
     const bu = typeof bn === "bigint" ? bn : 0n
     return bu > au ? 1 : bu < au ? -1 : 0
