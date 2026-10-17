@@ -78,9 +78,9 @@ function buildReportCard(entity: {
   const left = el("div", {})
   left.appendChild(el("span", { className: "pillar-label" }, pillar))
   const meta = el("div", { className: "report-meta" })
-  const auditedAtRaw = entity.attributes?.["auditedAt"]?.value
+  const auditedAtRaw = entity.attributes?.["audited_at"]?.value
   const auditedAt = typeof auditedAtRaw === "bigint" ? new Date(Number(auditedAtRaw) * 1000).toLocaleString() : "unknown time"
-  meta.textContent = `${attrValue(entity, "repoUrl")} · audited ${auditedAt}`
+  meta.textContent = `${attrValue(entity, "repo_url")} · audited ${auditedAt}`
   left.appendChild(meta)
   head.appendChild(left)
   head.appendChild(el("div", { className: `score-badge ${band}` }, `${Number.isFinite(score) ? score : scoreRaw}/100`))
