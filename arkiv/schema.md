@@ -5,16 +5,16 @@ Three entity kinds, discriminated by a `kind` attribute. Every write goes throug
 
 ## auditReport
 
-One per `(repoUrl, pillar)` pair, published by whichever wallet ran the audit.
+One per `(repo_url, pillar)` pair, published by whichever wallet ran the audit.
 
 | Attribute | Type | Why |
 |---|---|---|
 | `kind` | `str` | `"auditReport"` — lets a query select just this kind |
-| `repoUrl` | `str` | What was audited |
+| `repo_url` | `str` | What was audited |
 | `pillar` | `str` | `security` / `privacy` / `dataDesign` / `openSource` / `censorship` |
 | `score` | `i32` | 0–100. **Typed as i32, not str**, specifically so `getFailingReports()` can run a real `lt("score", ...)` range query instead of fetching every report and filtering in JS |
-| `findingsCount` | `i32` | How many findings this pillar had |
-| `auditedAt` | `u64` | Unix seconds. Also typed numeric, so reports could be range-queried by time if a future query needs it |
+| `findings_count` | `i32` | How many findings this pillar had |
+| `audited_at` | `u64` | Unix seconds. Also typed numeric, so reports could be range-queried by time if a future query needs it |
 
 Payload (`application/json`): `{ findings: Finding[] }` — the full finding list for this pillar,
 each with `ruleId`, `severity`, `message`, and optionally `file`/`line`. This lives in the payload,
@@ -46,12 +46,12 @@ A queue ticket, not part of the permanent record.
 | Attribute | Type |
 |---|---|
 | `kind` | `str` — `"auditRequest"` |
-| `repoUrl` | `str` |
+| `repo_url` | `str` |
 | `status` | `str` — `"queued"` |
 
 Who requested it is **not** a separate attribute — it's already on-chain as the write
 transaction's `$creator`, set automatically by whichever wallet signs the call. A redundant
-`requestedBy` attribute would just duplicate what `$creator` already proves, and — unlike
+`requeste_by` attribute would just duplicate what `$creator` already proves, and — unlike
 `$creator` — it would be a plain writable field, exactly the anti-pattern Usalama's own Security
 rule (`sec-writable-authority-filter`) flags in *other* projects.
 
@@ -65,7 +65,7 @@ wants to build a different dashboard against the same reports without asking per
 | Attribute | Type |
 |---|---|
 | `kind` | `str` — `"ruleDefinition"` |
-| `ruleId` | `str` |
+| `rule_id` | `str` |
 | `pillar` | `str` |
 
 Payload: `{ description: string }`.
@@ -102,5 +102,5 @@ at exactly this time, independent of trusting Usalama's server at all.
 What we deliberately **kept off Arkiv**: the static-analysis computation itself (parsing source,
 running the rule engine — see `packages/core/src/engine.ts`) runs locally or in CI, never on
 Arkiv; only the *result* becomes an entity. The target's raw source code is never stored on Arkiv
-— only a `repoUrl` reference and a findings summary, since putting someone else's full codebase
+— only a `repo_url` reference and a findings summary, since putting someone else's full codebase
 into a public, (mostly) un-deletable record would be its own problem.
