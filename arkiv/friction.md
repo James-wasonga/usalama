@@ -122,6 +122,61 @@ busier dataset.
 
 ---
 
+...
+busy dataset.
+
+---
+
+## 6. The client-side attribute-name validator accepts uppercase letters; the chain rejects them
+
+**This one cost a real, funded transaction to discover** — the clearest example in this report of
+something that only surfaces once you actually publish, not from reading source or running a
+local test.
+
+**Expected:** `packages/core/src/entities.ts` named attributes in camelCase (`repoUrl`,
+`auditedAt`, `findingsCount`, `ruleId`). The installed SDK's own client-side validator
+(`attr/names.ts`) explicitly documents and enforces this regex for attribute names:
+
+const NAME_RE = /^[A-Za-z][A-Za-z0-9._-]*$/
+
+
+That pattern allows uppercase letters (`A-Z`) by design — nothing in the SDK warned, and
+`npm run build` / `npm run typecheck` both passed cleanly, since this is a runtime value check,
+not a type-level one.
+
+**Actual:** the real `--publish` transaction against Tiramisu reverted:
+EntityMutationError: Transaction failed: an attribute name holds “A” (0x41) at byte 7, which is
+
+outside the name charset (“A”-“Z”, “a”-“z”, “0”-“9”, “.”, “-” and “_”, with a letter first)
+
+Error: Ident32InvalidByte(uint256 position, bytes1 value)
+
+(7, 0x41)
+
+Byte 7 of `"auditedAt"` is exactly `'A'` (0x41) — `a(0) u(1) d(2) i(3) t(4) e(5) d(6) A(7) t(8)`.
+The error message's own stated charset still lists `"A"-"Z"` as allowed, which makes this doubly
+confusing from the caller's side: the message describing *why* it failed names the very character
+it's rejecting as acceptable. Whatever the precise on-chain identifier packing rule actually is
+(we didn't dig into the contract bytecode to find out), the practical result was unambiguous:
+**the client-side check and the chain's real enforcement disagree**, and the client-side one is
+strictly more permissive, so it cannot catch this before a real, gas-spending transaction does.
+
+**Our fix:** renamed every attribute name used in `entities.ts` to all-lowercase snake_case —
+`repo_url`, `findings_count`, `audited_at`, `rule_id` — which is unambiguously safe under both the
+documented client-side charset and whatever the chain's stricter real rule turns out to be. This
+was a full pass across `entities.ts`, the matching `eq()` query calls, and every place the web
+dashboard (`apps/web/src/main.ts`) read these attributes back out, since a rename on the write
+side silently breaks every read site that still references the old name.
+
+**What this means for anyone else building on Arkiv:** don't trust `isValidAttributeName()` /
+`validateAttributeName()` as proof a name will actually be accepted on-chain. We'd suggest either
+tightening the client-side regex to match the chain's real rule, or — if uppercase genuinely is
+meant to work and we simply hit an unrelated edge case — making the revert's own error message
+name the *actual* disallowed character set instead of repeating the client-side one, since right
+now the error text actively misleads about its own cause.
+
+---
+
 ## Honest gap we did not solve
 
 `auditReport` is deliberately **not** `readonly` (see `arkiv/schema.md`), so a correction can be
