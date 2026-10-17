@@ -133,11 +133,10 @@ work without one.
    funds on any network.** One way: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`,
    then prefix the result with `0x`.
 2. Get its address (you can derive this from viem, or any wallet tool you trust).
-3. Go to [hub.arkiv.network](https://hub.arkiv.network/) and request Tiramisu testnet funds for
-   that address. (The hub's exact faucet flow may have changed since this was written — if it has,
-   the RULES.md in `Arkiv-Network/global-tour-stop-pre-devcon` is the canonical source for the
-   current process.)
-4. Set the key as an environment variable (see below) — never commit it.
+3. Go to your metamask or any evm compatible wallet and `Add wallet` then `import the private key`
+4. Go to [hub.arkiv.network](https://hub.arkiv.network/faucet) and request Tiramisu testnet funds for
+   that address. (The hub's exact faucet flow allows sign in with evm wallet,ensure the wallet address reads the one you imported)
+5. Set the key as an environment variable (see below) — never commit it.
 
 ### Setting your environment variables
 
