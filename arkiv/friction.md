@@ -153,7 +153,6 @@ Error: Ident32InvalidByte(uint256 position, bytes1 value)
 
 (7, 0x41)
 
-
 Byte 7 of `"auditedAt"` is exactly `'A'` (0x41) — `a(0) u(1) d(2) i(3) t(4) e(5) d(6) A(7) t(8)`.
 The error message's own stated charset still lists `"A"-"Z"` as allowed, which makes this doubly
 confusing from the caller's side: the message describing *why* it failed names the very character
