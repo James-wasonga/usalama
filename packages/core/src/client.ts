@@ -5,7 +5,7 @@ import {
   type WalletArkivClient,
 } from "@arkiv-network/sdk"
 import { tiramisu } from "@arkiv-network/sdk/chains"
-import { http, type Account } from "viem"
+import { http, webSocket, type Account } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 
 /**
@@ -28,6 +28,11 @@ function resolveRpcUrl(): string {
   return envVar("ARKIV_RPC_URL") ?? "https://rpc.tiramisu.db-chain.testnet.arkiv.network"
 }
 
+/** The WebSocket counterpart of {@link resolveRpcUrl} — override with ARKIV_WS_URL. */
+function resolveWsUrl(): string {
+  return envVar("ARKIV_WS_URL") ?? "wss://rpc.tiramisu.db-chain.testnet.arkiv.network"
+}
+
 /**
  * Extra headers to send with every RPC call — in particular an Arkiv Hub API key, for anyone
  * past the unauthenticated query budget (see arkiv/friction.md, entry on ANON_COST_LIMITED).
@@ -36,6 +41,11 @@ function resolveRpcUrl(): string {
  * time of writing (see friction.md). Rather than guess and silently send the wrong header, this
  * reads the name itself from an env var, defaulting to the industry-standard "x-api-key" — set
  * ARKIV_API_KEY_HEADER if hub.arkiv.network documents a different one for your key.
+ *
+ * Only usable on the HTTP transport — the browser's native WebSocket API has no way to attach
+ * custom headers to the handshake at all, so an API key cannot be applied to {@link createWatchClient}
+ * when it runs in a browser. It works there under Node (e.g. the CLI's `watch` command), since
+ * Node's `ws` implementation does allow custom handshake headers — see {@link wsTransport}.
  */
 function resolveHeaders(): Record<string, string> | undefined {
   const apiKey = envVar("ARKIV_API_KEY")
@@ -54,18 +64,47 @@ function resolveHeaders(): Record<string, string> | undefined {
  * catch it and decide what to do (back off, queue, or tell the user to add an API key) instead
  * of staring at a frozen process.
  */
-function transport() {
+function httpTransport() {
   return http(resolveRpcUrl(), {
     retryCount: 0,
     fetchOptions: { headers: resolveHeaders() },
   })
 }
 
-/** A read-only client against Tiramisu, ready to `.select()`, `.getEntity()`, `.watchEntityEvents()`. */
+/**
+ * A viem `webSocket` transport for Tiramisu — used only for {@link createWatchClient}.
+ *
+ * This matters more than it looks: `watchEntityEvents` is implemented on top of viem's
+ * `watchEvent`, which — given an HTTP transport — has no choice but to *poll*, re-querying
+ * roughly every second (see the installed SDK's `watchEntityEvents.ts`, `DEFAULT_POLLING_INTERVAL
+ * = BLOCK_TIME * 1000 / 2`). Every one of those polls counts against the same anonymous query
+ * budget as everything else, silently, for as long as a "live" view stays open. Given a real
+ * WebSocket transport instead, viem subscribes once (`eth_subscribe`) and the node pushes new
+ * events — no repeated polling, no budget drain. This is a real, confirmed-by-use fix, not a
+ * micro-optimisation: our own dashboard hit `ANON_COST_LIMITED` after a long-running session with
+ * the old HTTP-polling "live feed" open — see arkiv/friction.md.
+ */
+function wsTransport() {
+  return webSocket(resolveWsUrl())
+}
+
+/** A read-only client against Tiramisu for one-off queries: `.select()`, `.getEntity()`. */
 export function createReadClient(): PublicArkivClient {
   return createArkivPublicClient({
     chain: tiramisu,
-    transport: transport(),
+    transport: httpTransport(),
+  })
+}
+
+/**
+ * A read-only client specifically for `.watchEntityEvents()` — over a real WebSocket, not HTTP
+ * polling. Use this one for anything "live"; use {@link createReadClient} for everything else.
+ * See {@link wsTransport} for why this distinction exists at all.
+ */
+export function createWatchClient(): PublicArkivClient {
+  return createArkivPublicClient({
+    chain: tiramisu,
+    transport: wsTransport(),
   })
 }
 
@@ -79,7 +118,7 @@ export function createWriteClient(privateKey: `0x${string}`): WalletArkivClient 
   const account: Account = privateKeyToAccount(privateKey)
   return createArkivWalletClient({
     chain: tiramisu,
-    transport: transport(),
+    transport: httpTransport(),
     account,
   })
 }
