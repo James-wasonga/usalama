@@ -2,6 +2,7 @@
 import { Command } from "commander"
 import {
   createReadClient,
+  createWatchClient,
   createWriteClient,
   getLatestReports,
   liveProbeFindings,
@@ -109,11 +110,14 @@ program
     }
   })
 
-program
+  program
   .command("watch")
   .description("Stream newly created entities on Tiramisu as they land")
   .action(() => {
-    const client = createReadClient()
+    // A real WebSocket client, not the HTTP one — see createWatchClient()'s docstring in
+    // @usalama/core/client for why: watching over HTTP silently polls every ~1s and burns the
+    // anonymous query budget, which is exactly what happened to our own dashboard before this fix.
+    const client = createWatchClient()
     console.log("Watching Tiramisu for new entities. Ctrl+C to stop.\n")
     // Events carry entityKey/owner/expiresAt/creationFlags, but never attributes (see
     // arkiv/friction.md) — so showing *what* was created needs this follow-up getEntity() call.
