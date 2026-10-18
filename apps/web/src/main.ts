@@ -1,7 +1,7 @@
 import "./style.css"
 // Deliberately imports only the browser-safe subpaths — never the root `@usalama/core` barrel,
 // which also pulls in scan.ts's `node:fs`/`node:path` (see packages/core/src/index.ts's note).
-import { createReadClient } from "@usalama/core/client"
+import { createReadClient, createWatchClient } from "@usalama/core/client"
 import { ENTITY_KINDS, getLatestReports } from "@usalama/core/entities"
 
 // ---------------------------------------------------------------------------
@@ -38,6 +38,7 @@ toggleButton?.addEventListener("click", () => {
 // Dashboard logic
 // ---------------------------------------------------------------------------
 const client = createReadClient()
+const watchClient = createWatchClient()
 
 const form = document.querySelector<HTMLFormElement>("#search-form")
 const input = document.querySelector<HTMLInputElement>("#repo-input")
@@ -131,9 +132,9 @@ form?.addEventListener("submit", (event) => {
 if (liveFeed) {
   const seen: HTMLDivElement[] = []
 
-  client.watchEntityEvents({
+  watchClient.watchEntityEvents({
     onEntityCreated: (event) => {
-      client
+      watchClient
         .getEntity(event.entityKey)
         .then((entity) => {
           const kind = entity.attributes["kind"]?.value
