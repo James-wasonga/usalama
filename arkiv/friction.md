@@ -177,6 +177,48 @@ now the error text actively misleads about its own cause.
 
 ---
 
+## 7. `watchEntityEvents` over HTTP silently polls and drains the anonymous query budget — fixed by actually using the WebSocket endpoint
+
+**Found by just using our own dashboard**, not by reading source first this time — a genuinely live, deployed-feeling bug.
+
+**Expected:** our dashboard's "Recently published" feed, built on `watchEntityEvents`, would be a real push subscription — our own copy said exactly that ("Streamed live over WebSocket... No polling, no backend").
+
+**Actual:** after a normal working session with the dashboard tab open, a manual lookup started failing with:
+Lookup failed: HTTP request failed. Status: 429 ...
+
+Details: “ANON_COST_LIMITED” Version: viem@2.57.5
+
+
+Reading `watchEntityEvents.ts` in the installed SDK explained why: it's built on viem's
+`watchEvent`, with a `pollingInterval` defaulting to roughly half a block (~1 second at Tiramisu's
+2-second block time). Given an **HTTP** transport — which is all `client.ts` ever created, even
+though we'd already special-cased Tiramisu's rate limit in entry 2 — `watchEvent` has no choice
+but to poll: a fresh request every second, for as long as the tab stayed open, every one of them
+counting against the same anonymous budget as everything else. Our own "live feed" was quietly the
+biggest consumer of the budget it then couldn't pay for.
+
+**Our fix:** Tiramisu also publishes a real WebSocket RPC endpoint
+(`wss://rpc.tiramisu.db-chain.testnet.arkiv.network`, listed on hub.arkiv.network alongside the
+HTTP one). We added a second client constructor, `createWatchClient()`, using viem's `webSocket()`
+transport instead of `http()`. Given a WebSocket transport, viem's `watchEvent` subscribes once
+(`eth_subscribe`) instead of polling — the node pushes events, nothing is repeatedly requested.
+The CLI's `watch` command and the web dashboard's live feed both switched to this client; one-off
+calls (`list`, the dashboard's search box) still correctly use the plain HTTP client, since a
+single request doesn't benefit from a persistent socket.
+
+**One real limitation we didn't solve:** our HTTP transport attaches an API-key header for anyone
+past the free budget (entry 3). The browser's native WebSocket API has no mechanism to attach
+custom headers to the handshake at all — so an API key can be applied to HTTP calls in the browser
+dashboard, but not to the WebSocket watch connection there. It works under Node (the CLI), where
+the underlying `ws` library does support handshake headers. This is documented directly in
+`client.ts`'s `resolveHeaders()`, not left implicit.
+
+**Suggested fix:** nothing to ask of Arkiv here specifically — this was ours to catch, and the fact
+that a WebSocket endpoint already exists and solves it cleanly is a point in the SDK's favour, not
+against it. Worth noting for anyone else building a "live" view on Arkiv: check which transport
+your watch client is actually using before trusting polling-vs-push claims in your own docs — we
+didn't, and shipped an inaccurate one.
+
 ## Honest gap we did not solve
 
 `auditReport` is deliberately **not** `readonly` (see `arkiv/schema.md`), so a correction can be
